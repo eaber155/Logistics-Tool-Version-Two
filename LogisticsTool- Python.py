@@ -1,5 +1,6 @@
 #imports random module
 from random import randint
+import math
 import psycopg2
 import collections
 
@@ -121,7 +122,7 @@ women_dict = women_dict_from_database()
 # Calling the main functions depending on weather first visit or second visit            
 print"1: First Time Visit "
 print "2: Subsequent Visit"
-print "3: Schedule Neigbouring Areas"
+print "3: Schedule subsequent visit with neigbouring in mind"
 
 w= int(raw_input("Choose kind of visit: "))
 print " "
@@ -150,7 +151,7 @@ if w == 1:
         
         for area in area_list:
             total_num_of_women += women_number_dict[area][0]
-        return total_num_of_women
+        return float (total_num_of_women)
 
     #A function to get the area of a particular location from the database
     def add_area(area):
@@ -203,7 +204,7 @@ if w == 1:
     def total_number_of_workers():
         #The workers_list placed as a local variable so that ot can rmain unchanged
         workers_list = workers_list_from_database()
-        number_of_workers = len(workers_list)
+        number_of_workers = float (len(workers_list))
 
         return number_of_workers
 
@@ -217,12 +218,22 @@ if w == 1:
 
         num_of_workers = total_number_of_workers()
 
-        num_of_women_per_worker = total_number_of_women/num_of_workers
+        women_per_worker_one = float (total_number_of_women/num_of_workers)
+        
+        women_per_worker_two = int (round (women_per_worker_one))
+  
+        if women_per_worker_two == 0:
+            num_of_women_per_worker = 1
+        else:
+            num_of_women_per_worker = women_per_worker_two
 
-         
+
         workers_per_unit_area = density_of_women/num_of_women_per_worker
-
-        workers_in_area = int (workers_per_unit_area * size)
+ 
+        workers_in_area_float = float (workers_per_unit_area * size)
+   
+        workers_in_area = int (round (workers_in_area_float))
+ 
         return workers_in_area
 
 
@@ -249,10 +260,11 @@ if w == 1:
                 worker = workers_list[number]
                 workers_assigned.append(worker)
                 del workers_list[number]
+                new_workers_list = workers_list
                 last_count-=1
                 
                 count+=1
-
+                
         try:
             conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
         except:
@@ -262,14 +274,18 @@ if w == 1:
         conn.autocommit=True
 
         cur.execute("DROP TABLE IF EXISTS WORKERS_ASSIGNED_FIRST_TIME")
+        #cur.execute("DROP TABLE IF EXISTS WORKERS_REMAINING")
 
         sql = "CREATE TABLE WORKERS_ASSIGNED_FIRST_TIME (NAME VARCHAR(80) NULL)"
+        
+        #new = "CREATE TABLE WORKERS_REMAINING (NAME VARCHAR(80) NULL)"
+        
         cur.execute(sql)
+        #cur.execute(new)
 
         for worker in workers_assigned:
             sql2 = "INSERT INTO WORKERS_ASSIGNED_FIRST_TIME(NAME) VALUES ('%s')"%(worker)
             cur.execute(sql2)
-
 
         sql3 = "SELECT * FROM WORKERS_ASSIGNED_FIRST_TIME"
 
@@ -280,39 +296,40 @@ if w == 1:
         print "WORKERS ASSIGNED ARE: "
         for row in results:
             print row[0]
-
+            
         conn.rollback()
         cur.close()
         print " "
-                                 
+
         message = "The workers scheduled successfully"
         return message
 
-    #main function
+    #The main function
     area_list = areas_database()
-
-    for area in area_list:
-        print area
-        
-    print " "
+    area_length = 0
     
+    print "AREAS AVAILABLE"
+    print " "
     for area in area_list:
-        name = area
-        area_list = areas_database()
+        index = area_list.index(area)
+        print index, "-", area
 
-        count = 0
-
-        while count< len(area_list):
-            if name == area_list[count]:
+    while area_length< len(area_list):
+        area_index = int(raw_input("Choose area (using code): "))
+        print " "
+                
+        for area in area_list:
+            index = area_list.index(area)
+            if area_index == index:
+                name = area
+                print name
+                print " " #space
                 workers_numbers = add_workers_numbers()      
                 results = get_characteristics(area)
-                print name
-                print " "
                 print "Characteristics"
                 for row in results:
-                    print "Population is: ", row[0]
-                    print "Area is: ", row[1]
-                    print "Density is: ", row[2]
+                    print "Number of Women is: ", row[0]
+                    print "Density of Women is: ", row[1]
                 print " "
                 print "The number of workers to be assigned to this area is: ", workers_numbers
                 print " "
@@ -321,8 +338,19 @@ if w == 1:
                 print " "
                 print " "
                 break
-            count +=1
-    
+        area_length+=1
+        y = int(raw_input("Enter 0 to finish or 9 to move to another area: "))
+        print " "
+        if y ==0:
+            break
+        elif y ==9:
+            continue
+        else:
+            print "Wrong Option"
+            break
+    print "NO MORE OPTIONS AVAILABLE"
+        
+        
 elif w == 2:
     '''This is for the subsequent visit'''
     #A dictionary showing the women in different locations from the database.
@@ -334,7 +362,7 @@ elif w == 2:
 
     #A list of all the areas to be visited as from the database
     area_list = areas_database()
-
+ 
     try:
         conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
     except:
@@ -387,7 +415,7 @@ elif w == 2:
                 women_list.append(women)
             
         total_num_of_women = len (women_list) 
-        return total_num_of_women
+        return float (total_num_of_women)
 
     #A function to add the women in a particular area
     #to a list so that it can  be manipulated
@@ -451,7 +479,7 @@ elif w == 2:
     def total_number_of_workers():
         #The workers_list placed as a local variable so that it can remain unchanged
         workers_list = workers_list_from_database()
-        number_of_workers = len(workers_list)
+        number_of_workers = float (len(workers_list))
 
         return number_of_workers
 
@@ -463,17 +491,28 @@ elif w == 2:
         size = add_area(area)
         density_of_women = calculate_density()
         list_of_women = add_list_of_women(area)
+
         total_number_of_women = total_num_of_women()
-
+ 
         num_of_workers = total_number_of_workers()
+    
+        women_per_worker_one = float (total_number_of_women/num_of_workers)
+        
+        women_per_worker_two = int (round (women_per_worker_one))
+    
+        if women_per_worker_two == 0:
+            num_of_women_per_worker = 1
+        else:
+            num_of_women_per_worker = women_per_worker_two
 
-        num_of_women_per_worker = total_number_of_women/num_of_workers
-
-         
+   
         workers_per_unit_area = density_of_women/num_of_women_per_worker
-
-        workers_in_area = int (workers_per_unit_area * size)
-        return workers_in_area
+        workers_in_area_float = float (workers_per_unit_area * size)
+  
+        workers_in_area = int (round (workers_in_area_float))
+   
+        return workers_in_area                       
+        
 
     #A function to assign workers to the different areas
     def assign_workers():
@@ -481,12 +520,18 @@ elif w == 2:
         size = add_area(area)
         density_of_women = calculate_density()
         list_of_women = add_list_of_women(area)
+                               
         total_number_of_women = total_num_of_women()
-
         num_of_workers = total_number_of_workers()
 
-        num_of_women_per_worker = total_number_of_women/num_of_workers
-
+        women_per_worker_one = float (total_number_of_women/num_of_workers)
+        
+        women_per_worker_two = int (round (women_per_worker_one))
+        
+        if women_per_worker_two == 0:
+            num_of_women_per_worker = 1
+        else:
+            num_of_women_per_worker = women_per_worker_two
          
         workers_per_unit_area = density_of_women/num_of_women_per_worker
         
@@ -497,7 +542,7 @@ elif w == 2:
         last_count = len(workers_list)-1
 
         workers_assigned = []
-
+    
         if workers_in_area > workers_left:
             workers_assigned.extend(workers_list)
             print "The number of workers available is less than the required number"
@@ -511,7 +556,8 @@ elif w == 2:
                 del workers_list[number]
                 last_count-=1
                 
-                count+=1                
+                count+=1
+            
 
         try:
             conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
@@ -519,9 +565,11 @@ elif w == 2:
             print "I am unable to connect to the database"
 
         cur = conn.cursor()
-        conn.autocommit=True
-
+        
+        conn.autocommit=True                       
+        
         cur.execute("DROP TABLE IF EXISTS WORKERS_ASSIGNED_MAPPED")
+        
         sql = "CREATE TABLE WORKERS_ASSIGNED_MAPPED(WORKER VARCHAR (80) NULL, WOMAN VARCHAR (80) NULL)"
         cur.execute(sql)
         
@@ -537,12 +585,13 @@ elif w == 2:
                             sql2 = "INSERT INTO WORKERS_ASSIGNED_MAPPED(WORKER, WOMAN) VALUES ('%s','%s')"%(worker, list_of_women[0])
                             cur.execute(sql2)
                             del list_of_women[0]
+                            break
                         else:
                             sql3 = "INSERT INTO WORKERS_ASSIGNED_MAPPED(WORKER, WOMAN) VALUES ('%s','%s')"%(worker, list_of_women[i])
                             cur.execute(sql3)
                             del list_of_women[i]
                         i+=1
-
+       
         cur.execute("DROP TABLE IF EXISTS WORKERS_ASSIGNED_FOLLOW_UP")
 
         sql4 = "CREATE TABLE WORKERS_ASSIGNED_FOLLOW_UP (NAME VARCHAR(80) NULL)"
@@ -569,7 +618,7 @@ elif w == 2:
        
         for worker in workers_assigned:
             woman = []
-            sql7 = "SELECT WOMAN FROM WORKERS_ASSIGNED_MAPPED WHERE WORKER = '%s'"%worker
+            sql7 = "SELECT WOMAN FROM WORKERS_ASSIGNED_MAPPED WHERE WORKER = '%s'" %worker
             cur.execute(sql7)
             results2 = cur.fetchall()
             for row in results2:
@@ -597,24 +646,27 @@ elif w == 2:
             n = 0
             l = 0
 
-            sql8 = "SELECT WOMAN FROM WORKERS_ASSIGNED_MAPPED WHERE WORKER = '%s'"%w
+            sql8 = "SELECT WOMAN FROM WORKERS_ASSIGNED_MAPPED WHERE LOWER(WORKER) = LOWER('%s')"%w
             cur.execute(sql8)
 
             results3 = cur.fetchall()
+            print results3
 
             print "THE WOMEN ASSIGNED TO ", w, "ARE: "
             for row in results3:
                 print row[0]
 
             print " "
-            
-            w = int(raw_input("Enter 0 to continue or any other number to find another worker's information: "))
+
+            a+=1
+            w = int(raw_input("Enter 0 to continue or 9 to find another worker's information: "))
             print " "
             if w ==0:
                 break
-            else:
+            elif w ==9:
                 continue
-            a+=1
+            else:
+                print "Wrong Option"
         conn.rollback()
         cur.close()
         print " "
@@ -631,6 +683,7 @@ elif w == 2:
         index = area_list.index(area)
         print index, "-", area
 
+    area_length_list = []
     while area_length< len(area_list):
         area_index = int(raw_input("Choose area (using code): "))
         print " "
@@ -655,13 +708,19 @@ elif w == 2:
                 print " "
                 print " "
                 break
-        y = int(raw_input("Enter 0 to finish or any other number to move to another area: "))
+        area_length_list.append(area_length)
+        area_length+=1
+        y = int(raw_input("Enter 0 to finish or 9 to move to another area: "))
         print " "
         if y ==0:
             break
-        else:
+        elif y ==9:
             continue
-        area_length+=1
+        else:
+            print "Wrong Option"
+            break
+    print "NO MORE OPTIONS AVAILABLE"
+        
 
 elif w==3:
     ''''This is for the subsequent visit while visiting new areas'''
@@ -688,6 +747,18 @@ elif w==3:
 
         num_of_women = len (women_list)
 
+        try:
+            conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
+        except:
+            print "I am unable to connect to the database"
+
+        cur = conn.cursor()
+        conn.autocommit=True
+
+        sql = "UPDATE NEIGHBOUR_FOLLOW_UP_CHARACTERISTICS SET NUMBER_OF_WOMEN = (%s) WHERE LOCATION = ('%s')" %(num_of_women, area)
+        cur.execute(sql)
+        conn.rollback()
+        cur.close()        
         return num_of_women
 
     #A function to get the total number of women in the database
@@ -699,7 +770,7 @@ elif w==3:
                 women_list.append(women)
             
         total_num_of_women = len (women_list) 
-        return total_num_of_women
+        return float (total_num_of_women)
 
     #A function to add the women in a particular area
     #to a list so that it can  be manipulated
@@ -722,24 +793,43 @@ elif w==3:
 
         return area_size
 
-    #A function to get the density of women in the various location
+    #A function to get the density of women (women who are known) in the various location
     def calculate_density():
         num_of_women = add_num_of_women(area)
         size = add_area(area)
 
         density_of_women = float (num_of_women/size)
+        try:
+            conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
+        except:
+            print "I am unable to connect to the database"
+
+        cur = conn.cursor()
+        conn.autocommit=True
+
+        sql = "UPDATE NEIGHBOUR_FOLLOW_UP_CHARACTERISTICS SET DENSITY_OF_WOMEN = (%s) WHERE LOCATION = ('%s')" %(density_of_women, area)
+        cur.execute(sql)
+        conn.rollback()
+        cur.close()
 
         return density_of_women
 
     #A function that returns the characteristics of a given area
-    def get_characteristics ():
-        num_of_women = add_num_of_women(area)
-        size = add_area(area)
-        density_of_women = calculate_density()
-            
-        characteristics = {'num_of_women':num_of_women, 'size':size,
-                               'density_of_women': density_of_women}
-        return characteristics
+    def get_characteristics (area):
+        try:
+            conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
+        except:
+            print "I am unable to connect to the database"
+
+        cur = conn.cursor()
+        conn.autocommit=True
+
+        sql = "SELECT NUMBER_OF_WOMEN, DENSITY_OF_WOMEN FROM NEIGHBOUR_FOLLOW_UP_CHARACTERISTICS WHERE LOCATION = ('%s')" %area
+        cur.execute(sql)
+        results= cur.fetchall()
+        conn.rollback()
+        cur.close()
+        return results
 
     #A function to get the total number of workers in the database
     def total_number_of_workers():
@@ -747,7 +837,7 @@ elif w==3:
         workers_list = workers_list_from_database()
         number_of_workers = len(workers_list)
 
-        return number_of_workers
+        return float (number_of_workers)
 
     #A function that gets the total number of workers in the database and
     #calculates the number of workers to be assigned per area
@@ -758,12 +848,17 @@ elif w==3:
         density_of_women = calculate_density()
         list_of_women = add_list_of_women(area)
         total_number_of_women = total_num_of_women()
-
         num_of_workers = total_number_of_workers()
+        
+        women_per_worker_one = float (total_number_of_women/num_of_workers)
+   
+        women_per_worker_two = int (round (women_per_worker_one))
+    
+        if women_per_worker_two == 0:
+            num_of_women_per_worker = 1
+        else:
+            num_of_women_per_worker = women_per_worker_two
 
-        num_of_women_per_worker = total_number_of_women/num_of_workers
-
-         
         workers_per_unit_area = density_of_women/num_of_women_per_worker
 
         workers_in_area = int (workers_per_unit_area * size)
@@ -779,9 +874,15 @@ elif w==3:
 
         num_of_workers = total_number_of_workers()
 
-        num_of_women_per_worker = total_number_of_women/num_of_workers
+        women_per_worker_one = float (total_number_of_women/num_of_workers)
+        
+        women_per_worker_two = int (round (women_per_worker_one))
+   
+        if women_per_worker_two == 0:
+            num_of_women_per_worker = 1
+        else:
+            num_of_women_per_worker = women_per_worker_two
 
-         
         workers_per_unit_area = density_of_women/num_of_women_per_worker
         
         workers_in_area = add_workers_numbers()
@@ -824,7 +925,140 @@ elif w==3:
         
     
     def assign_workers_to_neighbours():
+        num_of_women = add_num_of_women(area)
+        size = add_area(area)
+        density_of_women = calculate_density()
+        list_of_women = add_list_of_women(area)
+                               
+        total_number_of_women = total_num_of_women()
+        num_of_workers = total_number_of_workers()
+
+        women_per_worker_one = float (total_number_of_women/num_of_workers)
+        
+        women_per_worker_two = int (round (women_per_worker_one))
+        
+        if women_per_worker_two == 0:
+            num_of_women_per_worker = 1
+        else:
+            num_of_women_per_worker = women_per_worker_two
+         
+        workers_per_unit_area = density_of_women/num_of_women_per_worker
+        
+        workers_in_area = add_workers_numbers()
+        
         workers_in_the_area = assign_workers()
+        
+        try:
+            conn = psycopg2.connect("dbname= 'Women_In_Areas' user= 'postgres' host= 'localhost'  password= 'namusokez'")
+        except:
+            print "I am unable to connect to the database"
+
+        cur = conn.cursor()
+        
+        conn.autocommit=True                       
+        
+        cur.execute("DROP TABLE IF EXISTS WORKERS_ASSIGNED_MAPPED")
+        
+        sql = "CREATE TABLE WORKERS_ASSIGNED_MAPPED(WORKER VARCHAR (80) NULL, WOMAN VARCHAR (80) NULL)"
+        cur.execute(sql)
+        
+        #assign workers to different women
+        while len(list_of_women)!=0:
+            for worker in workers_in_the_area:
+                if len(list_of_women)==0:
+                    break
+                else:
+                    i= 0
+                    while i < num_of_women_per_worker:
+                        if len(list_of_women)==1:
+                            sql2 = "INSERT INTO WORKERS_ASSIGNED_MAPPED(WORKER, WOMAN) VALUES ('%s','%s')"%(worker, list_of_women[0])
+                            cur.execute(sql2)
+                            del list_of_women[0]
+                            break
+                        else:
+                            sql3 = "INSERT INTO WORKERS_ASSIGNED_MAPPED(WORKER, WOMAN) VALUES ('%s','%s')"%(worker, list_of_women[i])
+                            cur.execute(sql3)
+                            del list_of_women[i]
+                        i+=1
+       
+        cur.execute("DROP TABLE IF EXISTS WORKERS_ASSIGNED_FOLLOW_UP")
+
+        sql4 = "CREATE TABLE WORKERS_ASSIGNED_FOLLOW_UP (NAME VARCHAR(80) NULL)"
+        
+        cur.execute(sql4)
+
+        for worker in workers_in_the_area:
+            sql5 = "INSERT INTO WORKERS_ASSIGNED_FOLLOW_UP(NAME) VALUES ('%s')"%(worker)
+            cur.execute(sql5)
+
+
+        sql6 = "SELECT * FROM WORKERS_ASSIGNED_FOLLOW_UP"
+        cur.execute(sql6)
+        results = cur.fetchall()
+  
+        print "WORKERS ASSIGNED ARE: "
+        for row in results:
+            print row[0]
+
+        print " "
+
+        print "WORKERS ASSIGNED TO THE WOMEN:"
+        print " "
+       
+        for worker in workers_in_the_area:
+            woman = []
+            sql7 = "SELECT WOMAN FROM WORKERS_ASSIGNED_MAPPED WHERE WORKER = '%s'"%worker
+            cur.execute(sql7)
+            results2 = cur.fetchall()
+            for row in results2:
+                woman.append(row[0])
+            if len(woman)==1:
+                print worker, ": ", woman[0]
+            elif len(woman)>1:
+                print worker, ": ", woman
+            else:
+                print "No woman assigned to this worker"
+            
+        print " "
+        print " "
+
+        #This code allows you to find out the exact women any worker has been
+        #assigned to
+        a=0
+        length2 = len(workers_in_the_area)
+        print "Enter the worker (to see the women that he has been assigned to): "
+        print " "
+        while a< length2:
+            w = raw_input("Worker: ")
+            print " "
+            k = []
+            n = 0
+            l = 0
+
+            sql8 = "SELECT WOMAN FROM WORKERS_ASSIGNED_MAPPED WHERE LOWER(WORKER) = LOWER('%s')"%w
+            cur.execute(sql8)
+
+            results3 = cur.fetchall()
+
+            print "THE WOMEN ASSIGNED TO ", w, "ARE: "
+            for row in results3:
+                print row[0]
+
+            print " "
+
+            a+=1
+            w = int(raw_input("Enter 0 to continue or 9 to find another worker's information: "))
+            print " "
+            if w ==0:
+                break
+            elif w ==9:
+                continue
+            else:
+                print "Wrong Option"
+        conn.rollback()
+        cur.close()
+        print " "
+
        
         neighbour_list = get_neighbour_list(area)
 
@@ -854,12 +1088,13 @@ elif w==3:
                             sql2 = "INSERT INTO NEIGHBOURS_ASSIGNED(NEIGHBOUR, WORKER) VALUES ('%s','%s')"%(neighbour, workers_in_the_area[0])
                             cur.execute(sql2)
                             del workers_in_the_area[0]
+                            break
                         else:
                             sql3 = "INSERT INTO NEIGHBOURS_ASSIGNED(NEIGHBOUR, WORKER) VALUES ('%s','%s')"%(neighbour, workers_in_the_area[i])
                             cur.execute(sql3)
                             del workers_in_the_area[i]
                         i+=1
-
+    
         print "WORKERS ASSIGNED TO THE NEIGHBOURS:"
         print " "
        
@@ -901,7 +1136,7 @@ elif w==3:
             n = 0
             l = 0
 
-            sql5 = "SELECT WORKER FROM NEIGHBOURS_ASSIGNED WHERE NEIGHBOUR = '%s'"%w
+            sql5 = "SELECT WORKER FROM NEIGHBOURS_ASSIGNED WHERE LOWER(NEIGHBOUR) = LOWER('%s')"%w
             cur.execute(sql5)
 
             results2 = cur.fetchall()
@@ -912,13 +1147,17 @@ elif w==3:
 
             print " "
             
-            w = int(raw_input("Enter 0 to continue or any other number to find another worker's information: "))
+            a+=1
+            w = int(raw_input("Enter 0 to continue or 9 to find another area's information: "))
             print " "
             if w ==0:
                 break
-            else:
+            elif w ==9:
                 continue
-            a+=1
+            else:
+                print "Wrong Option"
+                break
+        print "NO MORE OPTIONS AVAILABLE"
         conn.rollback()
         cur.close()
         print " "
@@ -949,18 +1188,29 @@ elif w==3:
                 print " " #space
                 print "The number of workers to be assigned to this area is: ", workers_numbers
                 print " "
+                results = get_characteristics(area)
+                print "Characteristics"
+                for row in results:
+                    print "Number of Women is: ", row[0]
+                    print "Density of Women is: ", row[1]
+                print " "
                 workers_assigned = assign_workers_to_neighbours()
                 print workers_assigned
                 print " "
                 print " "
                 break
-        y = int(raw_input("Enter 0 to finish or any other number to move to another area: "))
+        area_length+=1
+        y = int(raw_input("Enter 0 to finish or 9 to another area: "))
         print " "
         if y ==0:
             break
-        else:
+        elif y ==9:
             continue
-        area_length+=1
+        else:
+            print "Wrong Option"
+            break
+            
+    print "NO MORE OPTIONS AVAILABLE"
     
 else:
     print "Wrong option chosen"
